@@ -1,0 +1,179 @@
+
+{% extends 'index.html'%}
+{% load crispy_forms_tags %}
+{% block content %}
+    <div class="container">
+        <h1 class='text-center'>{{ article.title }}</h1>
+        <hr>
+        <p class="text-center"><img src="{{ article.image.url }}" style="width: 60%;" alt=""></p>
+        <div class="container">
+            <div class="col-sm-12">
+
+                {{ article.content|safe }}
+            <hr>
+            <h4>Понравилась статья?</h4>
+            <span class="liked">{{ article.likes}}</span><a href="#" id="like">+</span></a> |
+            <span class="disliked">{{ article.dislikes}}</span><a href="#" id="dislike">-</span></a>
+            <hr>
+            <p class="add_to_favorites-{{ article.slug }}">
+
+            {% if article in current_user.favorite_articles.all %}
+            <button class="btn btn-default disabled">Добавлено в избранное</button>
+            {% else %}
+            <a href="#" class="article" data-slug="{{article.slug}}"><button class="btn btn-primary">Добавить в избранное</button></a>
+            {% endif %}
+
+</p>
+<p class="article_added-{{article.slug}}"> </p>
+            <h3>Коментарии: </h3>
+               {% for comment in article_comments %}
+               <div class="media">
+                   <img class="mr-3" src="https://via.placeholder.com/64" alt="Generic placeholder image">
+                   <div class="media-body">
+                   <h5 class="mt-0">{{comment.author.username }}</h5>
+                   {{comment.comment}}
+                   <p>{{comment.timestamp|date:"Y-m-d"}}</p>
+                   </div>
+               </div>
+               {% endfor %}
+               <div class="media new_comment">
+
+               </div>
+            </div>
+            <div class="col-sm-7 col-sm-offset-2">
+                <form action="" method="POST">
+                    <input type="hidden" id="article" data-id="{{article.id}}">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <input type="submit" value="добавить комментарий" id="add_comment">
+                </form>
+            </div>
+        </div>
+    </div>
+    {% block jquery %}
+    <script >
+        $(document).ready(function() {
+        function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+var csrftoken = getCookie('csrftoken');
+          $('#add_comment').on('click', function(e) {
+              e.preventDefault()
+              var article_id = $('#article').attr('data-id')
+              var comment = $('#id_comment').val()
+
+              data = {
+                  article_id: article_id,
+                  comment: comment,
+                  csrfmiddlewaretoken: csrftoken
+              }
+
+              $.ajax({
+                type: "POST",
+                url: "{% url 'add_comment'%}",
+                dataType: 'json',
+                data: data,
+                success: function(data) {
+                    $.each(data, function(field) {
+                      $('.new_comment').prepend('<img class="mr-3" src="https://via.placeholder.com/64" alt="Generic placeholder image">\n'+
+                                                 '                   <div class="media-body">\n'+
+                                                 '                   <h5 class="mt-0">' + data[field]["author"] + '</h5>\n'+
+                                                 '                   '+ data[field]['comment']+'\n'+
+                                                 '                   <p>' + data[field]['timestamp'] + '</p>\n'+
+                                                 '                   </div>')
+
+                    })
+                    $('#id_comment').val('')
+
+                }
+
+              })
+          })
+        })
+</script>
+<script >
+    $(document).ready(function() {
+        $('#like').on('click', function(e) {
+            e.preventDefault()
+            var like = 'like'
+            var article_id = $('#article').attr('data-id')
+            data = {
+                article_id: article_id,
+                like: like,
+            }
+
+            $.ajax({
+                type: 'GET',
+                url: '{% url "user_reaction"%}',
+                dataType: 'json',
+                data: data,
+                success: function(data) {
+                    $('#liked').html(data.likes)
+                    $('#disliked').html(data.dislikes)
+                }
+            })
+
+        })
+    })
+    $(document).ready(function() {
+        $('#dislike').on('click', function(e) {
+            e.preventDefault()
+            var dislike = 'dislike'
+            var article_id = $('#article').attr('data-id')
+            data = {
+                article_id: article_id,
+                dislike: dislike,
+            }
+
+            $.ajax({
+                type: 'GET',
+                url: '{% url "user_reaction"%}',
+                dataType: 'json',
+                data: data,
+                success: function(data) {
+                    $('#liked').html(data.likes)
+                    $('#disliked').html(data.dislikes)
+                }
+            })
+
+        })
+    })
+</script>
+<script >
+    $(document).ready(function() {
+      $('.article').on('click', function(e) {
+            e.preventDefault()
+            var article_slug = $(this).attr('data-slug')
+
+            data = {
+                article_slug: article_slug
+            }
+
+            $.ajax({
+                type: "GET",
+                url: "{% url 'add_to_favorites'%}",
+                dataType: "json",
+                data: data,
+                success: function(data) {
+                    $('.add_to_favorites-'+article_slug).css('display', 'none')
+                    $('.article_added-'+article_slug).html("<button class='btn btn-default disabled'>Добавлено в избранное</button>")
+                }
+            })
+      })
+    })
+</script>
+    {% endblock jquery %}
+
+{% endblock %}

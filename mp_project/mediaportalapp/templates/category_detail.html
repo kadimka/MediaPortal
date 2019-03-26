@@ -1,0 +1,22 @@
+{% extends 'index.html' %}
+{% block content %}
+    <div class="container">
+        <h3>Категорія: {{category.name}}</h3>
+        <hr>
+        <div class="row">
+            {% for article in articles_from_category %}
+            <div class="col-sm-12">
+            <div class="col-sm-4">
+                <img src="{{ article.image.url }}" class="img-fluid">
+            </div>
+            <div class="col-sm-8">
+                <h2 class="text-center">{{article.title}}</h2>
+                <p>{{article.content|truncatewords:15}}</p>
+                <a href="{{ article.get_absolute_url }}"><button class="btn btn-primary">Читати</button></a>
+            </div>
+            {% endfor %}
+        </div>
+        </div>
+        {{ articles_from_category }}
+    </div>
+{% endblock content %}
